@@ -1,6 +1,8 @@
-import React from 'react';
-import { Dimensions, Platform, ViewStyle } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Dimensions, ViewStyle } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
+import { readAsStringAsync } from 'expo-file-system';
+import { Asset } from 'expo-asset';
 
 type Props = {
 	style?: ViewStyle;
@@ -27,22 +29,39 @@ const Quill = (props: Props) => {
 			props.onChange(data.message);
 		}
 	};
-
-	return (
+	const [ html, setHTML ] = useState();
+	useEffect(() => {
+		const getHtml = async () => {
+      console.log('getting quill.html');
+			const [ { localUri } ] = await Asset.loadAsync(require('./assets/quill.html'));
+      const html = await readAsStringAsync(localUri);
+      console.log('quill.html loaded:');
+			setHTML(html);
+		};
+		getHtml();
+	}, []);
+  return typeof(html) === 'undefined' ? (
+		<WebView
+			scalesPageToFit={true}
+			bounces={false}
+			scrollEnabled={false}
+			source={{ html: '<h2>Loading...</h2>' }}
+			injectedJavaScript={injectedJavaScript}
+			style={{
+				...props.style
+			}}
+		/>
+	) : (
 		<WebView
 			scalesPageToFit={true}
 			bounces={false}
 			scrollEnabled={false}
 			onMessage={onMessage}
-			source={
-				Platform.OS === 'ios' ? require('./assets/quill.html') : { uri: 'file:///android_asset/quill.html' }
-			}
+			source={{ html }}
 			javaScriptEnabled
 			injectedJavaScriptBeforeContentLoaded={injectedJavaScriptBeforeContentLoaded}
 			injectedJavaScript={injectedJavaScript}
 			style={{
-				height: Dimensions.get('window').height - 42,
-				width: Dimensions.get('window').width,
 				...props.style
 			}}
 		/>
